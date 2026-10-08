@@ -1,0 +1,23 @@
+PenScan — http://127.0.0.1:8765
+
+[PASS] 1. Secrets in the site's JavaScript
+       - anon key present in bundle (normal for Supabase apps)
+
+[FAIL] 2. Database readable without login
+       - API spec lists tables: notes, users
+       - table 'users' returned 2 row(s) with anon key only (columns like: ['id', 'name', 'email']) — data redacted
+
+[PASS] 3. File storage open to the public
+       - no bucket names found in client code; trying common names
+       - no buckets leaked file listings or direct downloads
+
+[PASS] 4. API routes callable with no login
+       - no edge function names found in client code
+       - no API routes or functions executed without a login
+
+[FAIL] 5. Admin/debug pages and error leaks
+       - /.env served with HTTP 200 — credentials on disk, public
+       - error pages do not leak stack traces
+
+Verdict: DO NOT SHIP
+Rules: any FAIL on checks 1-3 -> DO NOT SHIP | FAILs only on 4-5 -> SHIP WITH FIXES | all pass -> SHIP
