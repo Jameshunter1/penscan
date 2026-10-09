@@ -1,56 +1,44 @@
 # PenScan
 
-Five black-box security checks for apps built with AI tools (Lovable, Bolt, v0, …) before they launch.
+Five black-box security checks for apps built with AI tools (Lovable, Bolt, v0, …). Point it at a live app and it tells you **SHIP**, **SHIP WITH FIXES**, or **DO NOT SHIP**.
 
-It tests a live app the way a stranger on the internet would: can anyone read the database, find secrets in the site's code, download private files, call APIs without logging in, or open admin pages? Each check ends in a plain verdict: **SHIP**, **SHIP WITH FIXES**, or **DO NOT SHIP**.
+It caught this on the demo app included below:
 
-## The five checks
+```
+[FAIL] 2. Database readable without login
+       - table 'users' returned 2 row(s) with anon key only — data redacted
+[FAIL] 5. Admin/debug pages and error leaks
+       - /.env served with HTTP 200 — credentials on disk, public
 
-| # | Check | Fails when |
-|---|-------|-----------|
-| 1 | Secrets in the site's JavaScript | A `service_role` key or cloud secret (Stripe, AWS, …) is sitting in the downloaded code |
-| 2 | Database readable without login | A table returns real rows using only the public anon key |
-| 3 | File storage open to the public | A storage bucket lists files or serves downloads with no login |
-| 4 | API routes callable with no login | An edge function or API route runs without a user token |
-| 5 | Admin/debug pages and error leaks | `/.env` is served, `/admin` loads without login, or errors leak stack traces |
+Verdict: DO NOT SHIP
+```
 
-**Verdict rules:** any fail on checks 1–3 → **DO NOT SHIP**. Fails only on 4–5 → **SHIP WITH FIXES**. All pass → **SHIP**.
+## Try it in one line
 
-## Run it
+```bash
+git clone https://github.com/Jameshunter1/penscan.git && cd penscan && bash sample-scan.sh
+```
 
-Python 3, no dependencies.
+No dependencies — Python 3 only. That starts a deliberately vulnerable demo app on your own machine, scans it, and prints the verdict above. (Expected result: DO NOT SHIP. The demo is vulnerable on purpose.)
+
+## Scan your own app
 
 ```bash
 python3 penscan.py --site https://my-app.lovable.app
 ```
 
-If the scanner can't find your database URL and anon key in the site's code, pass them directly:
+Add `--supabase-url` and `--anon-key` if they can't be found in your site's code. `--json` for machine-readable output. Exit codes: 0 = SHIP, 1 = SHIP WITH FIXES, 2 = DO NOT SHIP.
 
-```bash
-python3 penscan.py --site https://my-app.lovable.app \
-  --supabase-url https://xyzcompany.supabase.co \
-  --anon-key eyJhbGciOi...
-```
+## The five checks
 
-Exit codes: `0` = SHIP, `1` = SHIP WITH FIXES, `2` = DO NOT SHIP. Add `--json` for machine-readable output.
+| # | Check | Fails when |
+|---|---|---|
+| 1 | Secrets in the site's JavaScript | A `service_role` key or cloud secret sits in the downloaded code |
+| 2 | Database readable without login | A table returns rows using only the public anon key |
+| 3 | File storage open to the public | A bucket lists files or serves downloads with no login |
+| 4 | API routes callable with no login | A function or route runs without a user token |
+| 5 | Admin pages and error leaks | `/.env` is served, `/admin` loads open, or errors leak stack traces |
 
-## Try it on the mock app
+**Verdict rules:** any fail on 1–3 → DO NOT SHIP. Fails only on 4–5 → SHIP WITH FIXES. All pass → SHIP.
 
-`examples/mock_target.py` is a tiny local app with two deliberate flaws (open database table, exposed `/.env`). Run it, scan it, watch the verdict land on DO NOT SHIP:
-
-```bash
-python3 examples/mock_target.py &   # serves http://127.0.0.1:8765
-python3 penscan.py --site http://127.0.0.1:8765 \
-  --supabase-url http://127.0.0.1:8765 --anon-key demo
-```
-
-## Rules
-
-- **Only scan an app whose owner asked you to.** Never point this at someone else's live app.
-- Findings are shown redacted: shapes, not data. Never paste real rows, emails, or keys into a report.
-
-## What this is and isn't
-
-This runs 5 high-signal checks against the failure modes behind the documented vibe-coded-app breaches (exposed databases, leaked keys, open storage). It is not a full penetration test: it doesn't review source code, test logged-in roles against each other, or cover anything added after the scan date. No scan makes an app "unhackable."
-
-See [report-template.md](report-template.md) for the write-up format, and [sample-report.md](sample-report.md) for a filled example from the mock run.
+Only scan apps whose owner asked you to. See [report-template.md](report-template.md) for the write-up format and [sample-report.md](sample-report.md) for a filled example. This is not a full penetration test — no scan makes an app "unhackable."
