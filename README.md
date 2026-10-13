@@ -21,6 +21,23 @@ git clone https://github.com/Jameshunter1/penscan.git && cd penscan && bash samp
 
 No dependencies — Python 3 only. That starts a deliberately vulnerable demo app on your own machine, scans it, and prints the verdict above. (Expected result: DO NOT SHIP. The demo is vulnerable on purpose.)
 
+## Known-bad target: the 2026 patterns, caught on purpose
+
+`examples/known_bad_app.py` is a second deliberately vulnerable demo that
+replays the two documented 2026 breach patterns: a `service_role` key in the
+public JavaScript bundle with no row-level security (checks 1–2 fail), and a
+broken object-level authorization endpoint — `GET /api/users/<id>` hands out
+any user's record with no login (check 4 fails). Checks 3 and 5 pass, so you
+can see the scanner discriminate instead of failing everything.
+
+```bash
+bash known-bad-scan.sh
+```
+
+Expected verdict: DO NOT SHIP. The completed write-up is
+[examples/known-bad-report.md](examples/known-bad-report.md). Localhost only,
+never deployed, every key and row fake.
+
 ## Scan your own app
 
 ```bash
